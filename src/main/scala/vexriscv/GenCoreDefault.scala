@@ -53,6 +53,12 @@ object GenCoreDefault{
       opt[String]("outputFile")    action { (v, c) => c.copy(outputFile = v) } text("output file name")
     }
     val argConfig = parser.parse(args, ArgConfig()).get
+    var withPipelining = false
+    var withMemoryStage = false
+    var withWriteBackStage = false
+    var withRfBypass = false
+    var withCsr = true
+    var noComplianceOverhead = false
 
     SpinalConfig.copy(netlistFileName = argConfig.outputFile + ".v").generateVerilog {
       // Generate CPU plugin list
@@ -62,12 +68,20 @@ object GenCoreDefault{
         if(argConfig.iCacheSize <= 0){
           new IBusSimplePlugin(
             resetVector = null,
-            prediction = argConfig.prediction
+            cmdForkOnSecondStage = false,
+            cmdForkPersistence = false,
+            prediction = argConfig.prediction,
+            catchAccessFault = false,
+            compressedGen = false,
+            injectorStage = false,
+            rspHoldValue = !withPipelining,
+            singleInstructionPipeline = !withPipelining,
+            busLatencyMin = 1,
+            pendingMax = if(withPipelining) 3 else 1
           )
-        }else {
+        } else {
           new IBusCachedPlugin(
             resetVector = null,
-            relaxedPcCalculation = false,
             prediction = argConfig.prediction,
             config = InstructionCacheConfig(
               cacheSize = argConfig.iCacheSize,
@@ -76,9 +90,9 @@ object GenCoreDefault{
               addressWidth = 32,
               cpuDataWidth = 32,
               memDataWidth = 32,
-              catchIllegalAccess = true,
-              catchAccessFault = true,
-              catchMemoryTranslationMiss = true,
+              catchIllegalAccess = false,
+              catchAccessFault = false,
+              catchMemoryTranslationMiss = false,
               asyncTagMemory = false,
               twoCycleRam = true,
               twoCycleCache = true
@@ -87,11 +101,15 @@ object GenCoreDefault{
         },
 
         if(argConfig.dCacheSize <= 0){
+          // new DBusSimplePlugin(
+          //   catchAddressMisaligned = false,
+          //   catchAccessFault = false
+          // )
           new DBusSimplePlugin(
-            catchAddressMisaligned = false,
+            catchAddressMisaligned = withCsr && !noComplianceOverhead,
             catchAccessFault = false
           )
-        }else {
+        } else {
           new DBusCachedPlugin(
             config = new DataCacheConfig(
               cacheSize = argConfig.dCacheSize,
@@ -114,57 +132,139 @@ object GenCoreDefault{
           ioRange      = _.msb
         ),
         new DecoderSimplePlugin(
-          catchIllegalInstruction = true
+          catchIllegalInstruction = false
         ),
         new RegFilePlugin(
           regFileReadyKind = plugin.SYNC,
-          zeroBoot = false
+          zeroBoot = false,
+          x0Init = false,
+          readInExecute = true,
+          syncUpdateOnStall = withPipelining
         ),
+        // new RegFilePlugin(
+        //   regFileReadyKind = plugin.SYNC,
+        //   zeroBoot = false
+        // ),
         new IntAluPlugin,
         new SrcPlugin(
           separatedAddSub = false,
-          executeInsertion = true
+          executeInsertion = true,
+          decodeAddSub = false
         ),
         if(argConfig.singleCycleMulDiv) {
           new FullBarrelShifterPlugin
         }else {
           new LightShifterPlugin
         },
-        new HazardSimplePlugin(
-          bypassExecute           = argConfig.bypass,
-          bypassMemory            = argConfig.bypass,
-          bypassWriteBack         = argConfig.bypass,
-          bypassWriteBackBuffer   = argConfig.bypass,
-          pessimisticUseSrc       = false,
-          pessimisticWriteRegFile = false,
-          pessimisticAddressMatch = false
-        ),
+        // new HazardSimplePlugin(
+        //   bypassExecute           = argConfig.bypass,
+        //   bypassMemory            = argConfig.bypass,
+        //   bypassWriteBack         = argConfig.bypass,
+        //   bypassWriteBackBuffer   = argConfig.bypass,
+        //   pessimisticUseSrc       = false,
+        //   pessimisticWriteRegFile = false,
+        //   pessimisticAddressMatch = false
+        // ),
+        /*
         new BranchPlugin(
           earlyBranch = false,
           catchAddressMisaligned = true
         ),
-        new CsrPlugin(
-          config = CsrPluginConfig.small(mtvecInit = null).copy(mtvecAccess = WRITE_ONLY)
+        */
+        // new LightShifterPlugin(),
+        new BranchPlugin(
+          earlyBranch = true,
+          catchAddressMisaligned = withCsr && !noComplianceOverhead,
+          fenceiGenAsAJump = withPipelining,
+          fenceiGenAsANop = !withPipelining
         ),
+        // new CsrPlugin(
+        //   config = CsrPluginConfig.small(mtvecInit = null).copy(mtvecAccess = WRITE_ONLY)
+        // ),
         new YamlPlugin(argConfig.outputFile.concat(".yaml"))
       )
 
-      if(argConfig.mulDiv) {
-        if(argConfig.singleCycleMulDiv) {
-          plugins ++= List(
-            new MulPlugin,
-            new DivPlugin
-          )
-        }else {
-          plugins ++= List(
-            new MulDivIterativePlugin(
-              genMul = true,
-              genDiv = true,
-              mulUnrollFactor = 1,
-              divUnrollFactor = 1
-            )
-          )
-        }
+      if(withCsr) plugins ++= List(new CsrPlugin(
+        if (noComplianceOverhead) new CsrPluginConfig(
+          catchIllegalAccess = true,
+          mvendorid = null,
+          marchid = null,
+          mimpid = null,
+          mhartid = null,
+          misaExtensionsInit = 0,
+          misaAccess = CsrAccess.NONE,
+          mtvecAccess = CsrAccess.WRITE_ONLY,
+          mtvecInit = null,
+          mepcAccess = CsrAccess.READ_WRITE,
+          mscratchGen = false,
+          mcauseAccess = CsrAccess.READ_ONLY,
+          mbadaddrAccess = CsrAccess.NONE,
+          mcycleAccess = CsrAccess.NONE,
+          minstretAccess = CsrAccess.NONE,
+          ecallGen = true,
+          ebreakGen = false,
+          wfiGenAsWait = false,
+          wfiGenAsNop = true,
+          ucycleAccess = CsrAccess.NONE
+        )
+        else new CsrPluginConfig(
+          catchIllegalAccess = false,
+          mvendorid = null,
+          marchid = null,
+          mimpid = null,
+          mhartid = null,
+          misaExtensionsInit = 0,
+          misaAccess = CsrAccess.NONE,
+          mtvecAccess = CsrAccess.WRITE_ONLY,
+          mtvecInit = null,
+          mepcAccess = CsrAccess.READ_WRITE,
+          mscratchGen = true,
+          mcauseAccess = CsrAccess.READ_ONLY,
+          mbadaddrAccess = CsrAccess.READ_ONLY,
+          mcycleAccess = CsrAccess.NONE,
+          minstretAccess = CsrAccess.NONE,
+          ecallGen = true,
+          ebreakGen = true,
+          wfiGenAsWait = false,
+          wfiGenAsNop = true,
+          ucycleAccess = CsrAccess.NONE
+        )
+      ))
+
+      // if(argConfig.mulDiv) {
+      //   if(argConfig.singleCycleMulDiv) {
+      //     plugins ++= List(
+      //       new MulPlugin,
+      //       new DivPlugin
+      //     )
+      //   }else {
+      //     plugins ++= List(
+      //       new MulDivIterativePlugin(
+      //         genMul = true,
+      //         genDiv = true,
+      //         mulUnrollFactor = 1,
+      //         divUnrollFactor = 1
+      //       )
+      //     )
+      //   }
+      // }
+      // plugins += new MulPlugin
+      // plugins += new DivPlugin
+      // plugins += new MulDivIterativePlugin(
+      //   genMul = false,
+      //   genDiv = true,
+      //   divUnrollFactor = 1,
+      //   dhrystoneOpt = true
+      // )
+
+      if(withPipelining){
+        plugins += new HazardSimplePlugin(
+          bypassExecute = withRfBypass,
+          bypassMemory  = withRfBypass && withMemoryStage,
+          bypassWriteBackBuffer = withRfBypass
+        )
+      } else {
+        plugins += new NoHazardPlugin
       }
 
       if(argConfig.externalInterruptArray) plugins ++= List(
@@ -180,7 +280,10 @@ object GenCoreDefault{
       }
 
       // CPU configuration
-      val cpuConfig = VexRiscvConfig(plugins.toList)
+      val cpuConfig = VexRiscvConfig(
+        withMemoryStage = withMemoryStage,
+        withWriteBackStage = withWriteBackStage,
+        plugins.toList)
 
       // CPU instantiation
       val cpu = new VexRiscv(cpuConfig)
