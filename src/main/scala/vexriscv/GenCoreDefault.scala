@@ -23,7 +23,13 @@ case class ArgConfig(
   bypass : Boolean = true,
   externalInterruptArray : Boolean = true,
   prediction : BranchPrediction = STATIC,
-  outputFile : String = "VexRiscv"
+  outputFile : String = "VexRiscv",
+  withPipelining : Boolean = true,
+  withMemoryStage : Boolean = true,
+  withWriteBackStage : Boolean = true,
+  withRfBypass : Boolean = false,
+  withCsr : Boolean = true,
+  noComplianceOverhead : Boolean = false
 )
 
 object GenCoreDefault{
@@ -51,14 +57,15 @@ object GenCoreDefault{
       opt[Boolean]("externalInterruptArray")    action { (v, c) => c.copy(externalInterruptArray = v)   } text("switch between regular CSR and array like one")
       opt[String]("prediction")    action { (v, c) => c.copy(prediction = predictionMap(v))   } text("switch between regular CSR and array like one")
       opt[String]("outputFile")    action { (v, c) => c.copy(outputFile = v) } text("output file name")
+
+      opt[Boolean]("pipelining")            action { (v, c) => c.copy(withPipelining = v) } text("output file name")
+      opt[Boolean]("memoryStage")           action { (v, c) => c.copy(withMemoryStage = v) } text("output file name")
+      opt[Boolean]("writeBackStage")        action { (v, c) => c.copy(withWriteBackStage = v) } text("output file name")
+      opt[Boolean]("rfBypass")              action { (v, c) => c.copy(withRfBypass = v) } text("output file name")
+      opt[Boolean]("withCsr")               action { (v, c) => c.copy(withCsr = v) } text("output file name")
+      opt[Boolean]("noComplianceOverhead")  action { (v, c) => c.copy(noComplianceOverhead = v) } text("output file name")
     }
     val argConfig = parser.parse(args, ArgConfig()).get
-    var withPipelining = false
-    var withMemoryStage = false
-    var withWriteBackStage = false
-    var withRfBypass = false
-    var withCsr = true
-    var noComplianceOverhead = false
 
     SpinalConfig.copy(netlistFileName = argConfig.outputFile + ".v").generateVerilog {
       // Generate CPU plugin list
@@ -74,10 +81,10 @@ object GenCoreDefault{
             catchAccessFault = false,
             compressedGen = false,
             injectorStage = false,
-            rspHoldValue = !withPipelining,
-            singleInstructionPipeline = !withPipelining,
+            rspHoldValue = !argConfig.withPipelining,
+            singleInstructionPipeline = !argConfig.withPipelining,
             busLatencyMin = 1,
-            pendingMax = if(withPipelining) 3 else 1
+            pendingMax = if(argConfig.withPipelining) 3 else 1
           )
         } else {
           new IBusCachedPlugin(
@@ -106,7 +113,7 @@ object GenCoreDefault{
           //   catchAccessFault = false
           // )
           new DBusSimplePlugin(
-            catchAddressMisaligned = withCsr && !noComplianceOverhead,
+            catchAddressMisaligned = argConfig.withCsr && !argConfig.noComplianceOverhead,
             catchAccessFault = false
           )
         } else {
@@ -139,7 +146,7 @@ object GenCoreDefault{
           zeroBoot = false,
           x0Init = false,
           readInExecute = true,
-          syncUpdateOnStall = withPipelining
+          syncUpdateOnStall = argConfig.withPipelining
         ),
         // new RegFilePlugin(
         //   regFileReadyKind = plugin.SYNC,
@@ -165,27 +172,17 @@ object GenCoreDefault{
         //   pessimisticWriteRegFile = false,
         //   pessimisticAddressMatch = false
         // ),
-        /*
-        new BranchPlugin(
-          earlyBranch = false,
-          catchAddressMisaligned = true
-        ),
-        */
-        // new LightShifterPlugin(),
         new BranchPlugin(
           earlyBranch = true,
-          catchAddressMisaligned = withCsr && !noComplianceOverhead,
-          fenceiGenAsAJump = withPipelining,
-          fenceiGenAsANop = !withPipelining
+          catchAddressMisaligned = argConfig.withCsr && !argConfig.noComplianceOverhead,
+          fenceiGenAsAJump = argConfig.withPipelining,
+          fenceiGenAsANop = !argConfig.withPipelining
         ),
-        // new CsrPlugin(
-        //   config = CsrPluginConfig.small(mtvecInit = null).copy(mtvecAccess = WRITE_ONLY)
-        // ),
         new YamlPlugin(argConfig.outputFile.concat(".yaml"))
       )
 
-      if(withCsr) plugins ++= List(new CsrPlugin(
-        if (noComplianceOverhead) new CsrPluginConfig(
+      if(argConfig.withCsr) plugins ++= List(new CsrPlugin(
+        if (argConfig.noComplianceOverhead) new CsrPluginConfig(
           catchIllegalAccess = true,
           mvendorid = null,
           marchid = null,
@@ -231,24 +228,24 @@ object GenCoreDefault{
         )
       ))
 
-      // if(argConfig.mulDiv) {
-      //   if(argConfig.singleCycleMulDiv) {
-      //     plugins ++= List(
-      //       new MulPlugin,
-      //       new DivPlugin
-      //     )
-      //   }else {
-      //     plugins ++= List(
-      //       new MulDivIterativePlugin(
-      //         genMul = true,
-      //         genDiv = true,
-      //         mulUnrollFactor = 1,
-      //         divUnrollFactor = 1
-      //       )
-      //     )
-      //   }
-      // }
-      // plugins += new MulPlugin
+      if(argConfig.mulDiv) {
+        if(argConfig.singleCycleMulDiv) {
+          plugins ++= List(
+            new MulPlugin,
+            new DivPlugin
+          )
+        }else {
+          plugins ++= List(
+            new MulDivIterativePlugin(
+              genMul = true,
+              genDiv = true,
+              mulUnrollFactor = 1,
+              divUnrollFactor = 1
+            )
+          )
+        }
+      }
+      // plugins += new MulSimplePlugin
       // plugins += new DivPlugin
       // plugins += new MulDivIterativePlugin(
       //   genMul = false,
@@ -257,11 +254,11 @@ object GenCoreDefault{
       //   dhrystoneOpt = true
       // )
 
-      if(withPipelining){
+      if(argConfig.withPipelining){
         plugins += new HazardSimplePlugin(
-          bypassExecute = withRfBypass,
-          bypassMemory  = withRfBypass && withMemoryStage,
-          bypassWriteBackBuffer = withRfBypass
+          bypassExecute = argConfig.withRfBypass,
+          bypassMemory  = argConfig.withRfBypass && argConfig.withMemoryStage,
+          bypassWriteBackBuffer = argConfig.withRfBypass
         )
       } else {
         plugins += new NoHazardPlugin
@@ -281,8 +278,8 @@ object GenCoreDefault{
 
       // CPU configuration
       val cpuConfig = VexRiscvConfig(
-        withMemoryStage = withMemoryStage,
-        withWriteBackStage = withWriteBackStage,
+        withMemoryStage = argConfig.withMemoryStage,
+        withWriteBackStage = argConfig.withWriteBackStage,
         plugins.toList)
 
       // CPU instantiation
