@@ -13,5 +13,8 @@ lazy val root = (project in file(".")).
 lazy val vexRiscv = RootProject(file("VexRiscv"))
 
 //addCompilerPlugin("org.scala-lang.plugins" % "scala-continuations-plugin_2.11.6" % "1.0.2")
+//autoCompilerPlugins := true
+//addCompilerPlugin ("org.scala-lang.plugins" % "continuations" % "2.9.3")
 //scalacOptions += "-P:continuations:enable"
+//scalacOptions ++= Seq ("-P:continuations:enable")
 fork := true

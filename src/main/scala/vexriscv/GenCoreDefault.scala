@@ -79,7 +79,7 @@ object GenCoreDefault{
             cmdForkPersistence = false,
             prediction = argConfig.prediction,
             catchAccessFault = false,
-            compressedGen = false,
+            compressedGen = true,
             injectorStage = false,
             rspHoldValue = !argConfig.withPipelining,
             singleInstructionPipeline = !argConfig.withPipelining,
@@ -97,12 +97,12 @@ object GenCoreDefault{
               addressWidth = 32,
               cpuDataWidth = 32,
               memDataWidth = 32,
-              catchIllegalAccess = false,
-              catchAccessFault = false,
-              catchMemoryTranslationMiss = false,
+              catchIllegalAccess = true,
+              catchAccessFault = true,
               asyncTagMemory = false,
-              twoCycleRam = true,
-              twoCycleCache = true
+              twoCycleRam = false,
+              twoCycleCache = true,
+              preResetFlush = false
             )
           )
         },
@@ -127,19 +127,16 @@ object GenCoreDefault{
               memDataWidth = 32,
               catchAccessError = true,
               catchIllegal = true,
-              catchUnaligned = true,
-              catchMemoryTranslationMiss = true
+              catchUnaligned = true
+              // catchMemoryTranslationMiss = true
             ),
             memoryTranslatorPortConfig = null,
             csrInfo = true
           )
         },
 
-        new StaticMemoryTranslatorPlugin(
-          ioRange      = _.msb
-        ),
         new DecoderSimplePlugin(
-          catchIllegalInstruction = false
+          catchIllegalInstruction = true
         ),
         new RegFilePlugin(
           regFileReadyKind = plugin.SYNC,
