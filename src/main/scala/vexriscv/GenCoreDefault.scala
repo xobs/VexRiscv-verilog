@@ -273,7 +273,7 @@ object GenCoreDefault{
 
       // Add in the Debug plugin, if requested
       if(argConfig.debug) {
-        plugins += new DebugPlugin(ClockDomain.current.clone(reset = Bool().setName("debugReset")), hardwareBreakpointCount = 8)
+        plugins += new DebugPlugin(ClockDomain.current.clone(reset = Bool().setName("debugReset")), hardwareBreakpointCount = 4)
       }
 
       // CPU configuration
