@@ -22,7 +22,7 @@ case class ArgConfig(
   singleCycleMulDiv : Boolean = true,
   bypass : Boolean = true,
   externalInterruptArray : Boolean = true,
-  prediction : BranchPrediction = STATIC,
+  prediction : BranchPrediction = NONE,
   outputFile : String = "VexRiscv",
   withPipelining : Boolean = true,
   withMemoryStage : Boolean = true,
@@ -90,6 +90,7 @@ object GenCoreDefault{
           new IBusCachedPlugin(
             resetVector = null,
             prediction = argConfig.prediction,
+            withoutInjectorStage = true,
             config = InstructionCacheConfig(
               cacheSize = argConfig.iCacheSize,
               bytePerLine = 32,
@@ -101,7 +102,7 @@ object GenCoreDefault{
               catchAccessFault = true,
               asyncTagMemory = false,
               twoCycleRam = false,
-              twoCycleCache = true,
+              twoCycleCache = false,
               preResetFlush = false
             )
           )
@@ -140,7 +141,7 @@ object GenCoreDefault{
         ),
         new RegFilePlugin(
           regFileReadyKind = plugin.SYNC,
-          zeroBoot = false,
+          zeroBoot = true,
           x0Init = false,
           readInExecute = true,
           syncUpdateOnStall = argConfig.withPipelining
