@@ -26,7 +26,7 @@ VexRiscv_MinDebug.v: $(SRC)
 	sbt compile "runMain vexriscv.GenCoreDefault --iCacheSize 1024 --dCacheSize 0 --mulDiv false --singleCycleMulDiv false --outputFile 2-stage-1024-cache --pipelining false --memoryStage false --writeBackStage false"
 
 2-stage-1024-cache-debug.v: $(SRC)
-	sbt compile "runMain vexriscv.GenCoreDefault -d --iCacheSize 1024 --dCacheSize 0 --mulDiv false --singleCycleMulDiv false --outputFile 2-stage-1024-cache --pipelining false --memoryStage false --writeBackStage false"
+	sbt compile "runMain vexriscv.GenCoreDefault -d --iCacheSize 1024 --dCacheSize 0 --mulDiv false --singleCycleMulDiv false --outputFile 2-stage-1024-cache-debug --pipelining false --memoryStage false --writeBackStage false"
 
 2-stage-no-cache-debug.v: $(SRC)
 	sbt compile "runMain vexriscv.GenCoreDefault -d --iCacheSize 0 --dCacheSize 0 --mulDiv false --singleCycleMulDiv false --outputFile 2-stage-no-cache-debug --pipelining false --memoryStage false --writeBackStage false"
