@@ -84,13 +84,20 @@ object GenCoreDefault{
             rspHoldValue = !argConfig.withPipelining,
             singleInstructionPipeline = !argConfig.withPipelining,
             busLatencyMin = 1,
-            pendingMax = if(argConfig.withPipelining) 3 else 1
+            pendingMax = if(argConfig.withPipelining) 3 else 1,
+            memoryTranslatorPortConfig = MmuPortConfig(
+              portTlbSize = 4
+            )
           )
         } else {
           new IBusCachedPlugin(
             resetVector = null,
             prediction = argConfig.prediction,
             withoutInjectorStage = true,
+
+            memoryTranslatorPortConfig = MmuPortConfig(
+              portTlbSize = 4
+            ),
             config = InstructionCacheConfig(
               cacheSize = argConfig.iCacheSize,
               bytePerLine = 32,
@@ -115,7 +122,10 @@ object GenCoreDefault{
           // )
           new DBusSimplePlugin(
             catchAddressMisaligned = argConfig.withCsr && !argConfig.noComplianceOverhead,
-            catchAccessFault = false
+            catchAccessFault = false,
+            memoryTranslatorPortConfig = MmuPortConfig(
+              portTlbSize = 4
+            )
           )
         } else {
           new DBusCachedPlugin(
@@ -131,7 +141,9 @@ object GenCoreDefault{
               catchUnaligned = true
               // catchMemoryTranslationMiss = true
             ),
-            memoryTranslatorPortConfig = null,
+            memoryTranslatorPortConfig = MmuPortConfig(
+              portTlbSize = 4
+            ),
             csrInfo = true
           )
         },
@@ -175,6 +187,10 @@ object GenCoreDefault{
           catchAddressMisaligned = argConfig.withCsr && !argConfig.noComplianceOverhead,
           fenceiGenAsAJump = argConfig.withPipelining,
           fenceiGenAsANop = !argConfig.withPipelining
+        ),
+
+        new MmuPlugin(
+          ioRange = (x => x(31 downto 28) === 0xB || x(31 downto 28) === 0xE || x(31 downto 28) === 0xF )
         ),
         new YamlPlugin(argConfig.outputFile.concat(".yaml"))
       )
