@@ -29,6 +29,7 @@ case class ArgConfig(
   withWriteBackStage : Boolean = true,
   withRfBypass : Boolean = false,
   withCsr : Boolean = true,
+  withMmu : Boolean = false,
   noComplianceOverhead : Boolean = false
 )
 
@@ -63,6 +64,7 @@ object GenCoreDefault{
       opt[Boolean]("writeBackStage")        action { (v, c) => c.copy(withWriteBackStage = v) } text("output file name")
       opt[Boolean]("rfBypass")              action { (v, c) => c.copy(withRfBypass = v) } text("output file name")
       opt[Boolean]("withCsr")               action { (v, c) => c.copy(withCsr = v) } text("output file name")
+      opt[Boolean]("withMmu")                  action { (v, c) => c.copy(withMmu = v) } text("Enable MMU")
       opt[Boolean]("noComplianceOverhead")  action { (v, c) => c.copy(noComplianceOverhead = v) } text("output file name")
     }
     val argConfig = parser.parse(args, ArgConfig()).get
@@ -85,19 +87,17 @@ object GenCoreDefault{
             singleInstructionPipeline = !argConfig.withPipelining,
             busLatencyMin = 1,
             pendingMax = if(argConfig.withPipelining) 3 else 1,
-            memoryTranslatorPortConfig = MmuPortConfig(
-              portTlbSize = 4
-            )
+            memoryTranslatorPortConfig = if(argConfig.withMmu) MmuPortConfig(portTlbSize = 4) else null
           )
         } else {
           new IBusCachedPlugin(
             resetVector = null,
             prediction = argConfig.prediction,
-            withoutInjectorStage = true,
-
-            memoryTranslatorPortConfig = MmuPortConfig(
-              portTlbSize = 4
-            ),
+            withoutInjectorStage = false,
+            relaxedPcCalculation = false,
+            compressedGen = false,
+            injectorStage = true,
+            memoryTranslatorPortConfig = if(argConfig.withMmu) MmuPortConfig(portTlbSize = 4) else null,
             config = InstructionCacheConfig(
               cacheSize = argConfig.iCacheSize,
               bytePerLine = 32,
@@ -116,16 +116,11 @@ object GenCoreDefault{
         },
 
         if(argConfig.dCacheSize <= 0){
-          // new DBusSimplePlugin(
-          //   catchAddressMisaligned = false,
-          //   catchAccessFault = false
-          // )
           new DBusSimplePlugin(
             catchAddressMisaligned = argConfig.withCsr && !argConfig.noComplianceOverhead,
             catchAccessFault = false,
-            memoryTranslatorPortConfig = MmuPortConfig(
-              portTlbSize = 4
-            )
+            withLrSc = argConfig.withMmu,
+            memoryTranslatorPortConfig = if(argConfig.withMmu) MmuPortConfig(portTlbSize = 4) else null
           )
         } else {
           new DBusCachedPlugin(
@@ -141,9 +136,7 @@ object GenCoreDefault{
               catchUnaligned = true
               // catchMemoryTranslationMiss = true
             ),
-            memoryTranslatorPortConfig = MmuPortConfig(
-              portTlbSize = 4
-            ),
+            memoryTranslatorPortConfig = if(argConfig.withMmu) MmuPortConfig(portTlbSize = 4) else null,
             csrInfo = true
           )
         },
@@ -189,7 +182,7 @@ object GenCoreDefault{
           fenceiGenAsANop = !argConfig.withPipelining
         ),
 
-        new MmuPlugin(
+        if(argConfig.withMmu) new MmuPlugin(
           ioRange = (x => x(31 downto 28) === 0xB || x(31 downto 28) === 0xE || x(31 downto 28) === 0xF )
         ),
         new YamlPlugin(argConfig.outputFile.concat(".yaml"))
@@ -280,8 +273,8 @@ object GenCoreDefault{
 
       if(argConfig.externalInterruptArray) plugins ++= List(
         new ExternalInterruptArrayPlugin(
-          maskCsrId = 0xBC0,
-          pendingsCsrId = 0xFC0
+          machineMaskCsrId = 0xBC0,
+          machinePendingsCsrId = 0xFC0
         )
       )
 
