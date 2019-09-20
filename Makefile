@@ -1,13 +1,8 @@
 SRC := src/main/scala/vexriscv/GenCoreDefault.scala
 
 all: \
-	2-stage-1024-cache-debug.v \
-	4-stage-1024-cache-debug.v \
-	2-stage-2048-cache-debug.v \
-	2-stage-2048-cache.v \
-	2-stage-no-cache-debug.v \
-	4-stage-no-cache-debug.v \
-	5-stage-pipelined-no-cache-debug.v \
+	VexRiscv_Fomu.v \
+	VexRiscv_Fomu_Debug.v \
 
 VexRiscv_Fomu.v:
 	sbt compile " runMain vexriscv.GenCoreDefault --iCacheSize 2048 --dCacheSize 0 --mulDiv false --singleCycleMulDiv false --outputFile $@ --pipelining false --memoryStage false --writeBackStage false --withMmu true"
