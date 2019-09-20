@@ -182,12 +182,12 @@ object GenCoreDefault{
           fenceiGenAsANop = !argConfig.withPipelining
         ),
 
-        if(argConfig.withMmu) new MmuPlugin(
-          ioRange = (x => x(31 downto 28) === 0xB || x(31 downto 28) === 0xE || x(31 downto 28) === 0xF )
-        ),
         new YamlPlugin(argConfig.outputFile.concat(".yaml"))
       )
 
+      if(argConfig.withMmu) plugins += new MmuPlugin(
+        ioRange = (x => x(31 downto 28) === 0xB || x(31 downto 28) === 0xE || x(31 downto 28) === 0xF )
+      )
       if(argConfig.withCsr) plugins ++= List(new CsrPlugin(
         if (argConfig.noComplianceOverhead) new CsrPluginConfig(
           catchIllegalAccess = true,
