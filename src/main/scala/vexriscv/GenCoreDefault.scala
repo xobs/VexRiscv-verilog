@@ -30,7 +30,8 @@ case class ArgConfig(
   withRfBypass : Boolean = false,
   withCsr : Boolean = true,
   withMmu : Boolean = false,
-  noComplianceOverhead : Boolean = false
+  noComplianceOverhead : Boolean = false,
+  hardwareBreakpointCount : Int = 4
 )
 
 object GenCoreDefault{
@@ -48,6 +49,7 @@ object GenCoreDefault{
     val parser = new scopt.OptionParser[ArgConfig]("VexRiscvGen") {
       //  ex :-d    or   --debug
       opt[Unit]('d', "debug")    action { (_, c) => c.copy(debug = true)   } text("Enable debug")
+      opt[Int]("hardwareBreakpointCount")     action { (v, c) => c.copy(hardwareBreakpointCount = v) } text("Specify number of hardware breakpoints")
       // ex : -iCacheSize=XXX
       opt[Int]("iCacheSize")     action { (v, c) => c.copy(iCacheSize = v) } text("Set instruction cache size, 0 mean no cache")
       // ex : -dCacheSize=XXX
@@ -146,7 +148,7 @@ object GenCoreDefault{
         ),
         new RegFilePlugin(
           regFileReadyKind = plugin.SYNC,
-          zeroBoot = true,
+          zeroBoot = false,
           x0Init = false,
           readInExecute = true,
           syncUpdateOnStall = argConfig.withPipelining
@@ -280,7 +282,7 @@ object GenCoreDefault{
 
       // Add in the Debug plugin, if requested
       if(argConfig.debug) {
-        plugins += new DebugPlugin(ClockDomain.current.clone(reset = Bool().setName("debugReset")), hardwareBreakpointCount = 4)
+        plugins += new DebugPlugin(ClockDomain.current.clone(reset = Bool().setName("debugReset")), hardwareBreakpointCount = argConfig.hardwareBreakpointCount)
       }
 
       // CPU configuration
