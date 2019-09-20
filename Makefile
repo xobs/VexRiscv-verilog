@@ -5,10 +5,10 @@ all: \
 	VexRiscv_Fomu_Debug.v \
 
 VexRiscv_Fomu.v:
-	sbt compile " runMain vexriscv.GenCoreDefault --iCacheSize 2048 --dCacheSize 0 --mulDiv false --singleCycleMulDiv false --outputFile $@ --pipelining false --memoryStage false --writeBackStage false --withMmu true"
+	sbt compile " runMain vexriscv.GenCoreDefault --iCacheSize 2048 --dCacheSize 0 --mulDiv false --singleCycleMulDiv false --outputFile $(basename $@) --pipelining false --memoryStage false --writeBackStage false --withMmu true"
 
 VexRiscv_Fomu_Debug.v:
-	sbt compile " runMain vexriscv.GenCoreDefault --iCacheSize 2048 --dCacheSize 0 --mulDiv false --singleCycleMulDiv false --outputFile $@ --pipelining false --memoryStage false --writeBackStage false --withMmu true -d --hardwareBreakpointCount 2"
+	sbt compile " runMain vexriscv.GenCoreDefault --iCacheSize 2048 --dCacheSize 0 --mulDiv false --singleCycleMulDiv false --outputFile $(basename $@) --pipelining false --memoryStage false --writeBackStage false --withMmu true -d --hardwareBreakpointCount 2"
 
 migen: VexRiscv.v VexRiscv_Debug.v VexRiscv_Lite.v VexRiscv_LiteDebug.v VexRiscv_Min.v VexRiscv_MinDebug.v
 
