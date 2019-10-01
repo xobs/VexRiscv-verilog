@@ -3,12 +3,20 @@ SRC := src/main/scala/vexriscv/GenCoreDefault.scala
 all: \
 	VexRiscv_Fomu.v \
 	VexRiscv_Fomu_Debug.v \
+	VexRiscv_HaD.v \
+	VexRiscv_Had_Debug.v
 
 VexRiscv_Fomu.v:
 	sbt compile " runMain vexriscv.GenCoreDefault --iCacheSize 2048 --dCacheSize 0 --mulDiv false --singleCycleMulDiv false --outputFile $(basename $@) --pipelining false --memoryStage false --writeBackStage false --withMmu true"
 
 VexRiscv_Fomu_Debug.v:
 	sbt compile " runMain vexriscv.GenCoreDefault --iCacheSize 2048 --dCacheSize 0 --mulDiv false --singleCycleMulDiv false --outputFile $(basename $@) --pipelining false --memoryStage false --writeBackStage false --withMmu true -d --hardwareBreakpointCount 2"
+
+VexRiscv_HaD.v:
+	sbt compile "runMain vexriscv.GenHaD --outputFile $(basename $@)"
+
+VexRiscv_HaD_Debug.v:
+	sbt compile "runMain vexriscv.GenHaD --outputFile $(basename $@) -d --hardwareBreakpointCount 8"
 
 migen: VexRiscv.v VexRiscv_Debug.v VexRiscv_Lite.v VexRiscv_LiteDebug.v VexRiscv_Min.v VexRiscv_MinDebug.v
 
