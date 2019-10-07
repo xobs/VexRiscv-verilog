@@ -89,7 +89,7 @@ object GenCoreDefault{
             singleInstructionPipeline = !argConfig.withPipelining,
             busLatencyMin = 1,
             pendingMax = if(argConfig.withPipelining) 3 else 1,
-            memoryTranslatorPortConfig = if(argConfig.withMmu) MmuPortConfig(portTlbSize = 4) else null
+            memoryTranslatorPortConfig = if(argConfig.withMmu) MmuPortConfig(portTlbSize = 2) else null
           )
         } else {
           new IBusCachedPlugin(
@@ -99,7 +99,7 @@ object GenCoreDefault{
             relaxedPcCalculation = false,
             compressedGen = false,
             injectorStage = true,
-            memoryTranslatorPortConfig = if(argConfig.withMmu) MmuPortConfig(portTlbSize = 4) else null,
+            memoryTranslatorPortConfig = if(argConfig.withMmu) MmuPortConfig(portTlbSize = 2) else null,
             config = InstructionCacheConfig(
               cacheSize = argConfig.iCacheSize,
               bytePerLine = 32,
@@ -122,7 +122,7 @@ object GenCoreDefault{
             catchAddressMisaligned = argConfig.withCsr && !argConfig.noComplianceOverhead,
             catchAccessFault = false,
             withLrSc = argConfig.withMmu,
-            memoryTranslatorPortConfig = if(argConfig.withMmu) MmuPortConfig(portTlbSize = 4) else null
+            memoryTranslatorPortConfig = if(argConfig.withMmu) MmuPortConfig(portTlbSize = 2) else null
           )
         } else {
           new DBusCachedPlugin(
@@ -138,7 +138,7 @@ object GenCoreDefault{
               catchUnaligned = true
               // catchMemoryTranslationMiss = true
             ),
-            memoryTranslatorPortConfig = if(argConfig.withMmu) MmuPortConfig(portTlbSize = 4) else null,
+            memoryTranslatorPortConfig = if(argConfig.withMmu) MmuPortConfig(portTlbSize = 2) else null,
             csrInfo = true
           )
         },
@@ -227,8 +227,8 @@ object GenCoreDefault{
           mscratchGen = true,
           mcauseAccess = CsrAccess.READ_ONLY,
           mbadaddrAccess = CsrAccess.READ_ONLY,
-          mcycleAccess = CsrAccess.NONE,
-          minstretAccess = CsrAccess.NONE,
+          mcycleAccess = CsrAccess.READ_ONLY,
+          minstretAccess = CsrAccess.READ_ONLY,
           ecallGen = true,
           ebreakGen = true,
           wfiGenAsWait = false,

@@ -16,7 +16,7 @@ VexRiscv_HaD.v:
 	sbt compile "runMain vexriscv.GenHaD --outputFile $(basename $@)"
 
 VexRiscv_HaD_Debug.v:
-	sbt compile "runMain vexriscv.GenHaD --outputFile $(basename $@) -d --hardwareBreakpointCount 8"
+	sbt compile "runMain vexriscv.GenHaD --outputFile $(basename $@) -d --hardwareBreakpointCount 4"
 
 migen: VexRiscv.v VexRiscv_Debug.v VexRiscv_Lite.v VexRiscv_LiteDebug.v VexRiscv_Min.v VexRiscv_MinDebug.v
 
