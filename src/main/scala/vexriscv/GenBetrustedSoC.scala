@@ -60,6 +60,7 @@ object GenBetrustedSoC{
             memoryTranslatorPortConfig = MmuPortConfig(portTlbSize = 4),
             compressedGen = true,
             relaxedPcCalculation = true,
+            injectorStage = true,
             config = InstructionCacheConfig(
               cacheSize = 4096,
               bytePerLine = 32,
@@ -122,7 +123,7 @@ object GenBetrustedSoC{
         ),
         new MulPlugin,
         new DivPlugin,
-        new CsrPlugin(CsrPluginConfig.linuxMinimal(mtVecInit = null).copy(ebreakGen = false)),
+        new CsrPlugin(CsrPluginConfig.linuxMinimal(mtVecInit = null).copy(ebreakGen = true).copy(pipelineCsrRead = true)),
         new BranchPlugin(
           earlyBranch = false,
           catchAddressMisaligned = true
