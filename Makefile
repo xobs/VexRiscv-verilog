@@ -4,19 +4,27 @@ all: \
 	VexRiscv_Fomu.v \
 	VexRiscv_Fomu_Debug.v \
 	VexRiscv_HaD.v \
-	VexRiscv_Had_Debug.v
+	VexRiscv_Had_Debug.v \
+	VexRiscv_BetrustedSoC.v \
+	VexRiscv_BetrustedSoC_Debug.v
 
-VexRiscv_Fomu.v:
+VexRiscv_Fomu.v: src/main/scala/vexriscv/GenCoreDefault.scala
 	sbt compile " runMain vexriscv.GenCoreDefault --iCacheSize 2048 --dCacheSize 0 --mulDiv false --singleCycleMulDiv false --outputFile $(basename $@) --pipelining false --memoryStage false --writeBackStage false --withMmu true"
 
-VexRiscv_Fomu_Debug.v:
+VexRiscv_Fomu_Debug.v: src/main/scala/vexriscv/GenCoreDefault.scala
 	sbt compile " runMain vexriscv.GenCoreDefault --iCacheSize 2048 --dCacheSize 0 --mulDiv false --singleCycleMulDiv false --outputFile $(basename $@) --pipelining false --memoryStage false --writeBackStage false --withMmu true -d --hardwareBreakpointCount 2"
 
-VexRiscv_HaD.v:
+VexRiscv_HaD.v: src/main/scala/vexriscv/GenHaD.scala
 	sbt compile "runMain vexriscv.GenHaD --outputFile $(basename $@)"
 
-VexRiscv_HaD_Debug.v:
+VexRiscv_HaD_Debug.v: src/main/scala/vexriscv/GenHaD.scala
 	sbt compile "runMain vexriscv.GenHaD --outputFile $(basename $@) -d --hardwareBreakpointCount 4"
+
+VexRiscv_BetrustedSoC.v: src/main/scala/vexriscv/GenBetrustedSoC.scala
+	sbt compile "runMain vexriscv.GenBetrustedSoC --outputFile $(basename $@)"
+
+VexRiscv_BetrustedSoC_Debug.v: src/main/scala/vexriscv/GenBetrustedSoC.scala
+	sbt compile "runMain vexriscv.GenBetrustedSoC --outputFile $(basename $@) -d --hardwareBreakpointCount 4"
 
 migen: VexRiscv.v VexRiscv_Debug.v VexRiscv_Lite.v VexRiscv_LiteDebug.v VexRiscv_Min.v VexRiscv_MinDebug.v
 
