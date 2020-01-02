@@ -8,11 +8,17 @@ all: \
 	VexRiscv_BetrustedSoC.v \
 	VexRiscv_BetrustedSoC_Debug.v
 
-VexRiscv_Fomu.v: src/main/scala/vexriscv/GenCoreDefault.scala
-	sbt compile " runMain vexriscv.GenCoreDefault --iCacheSize 2048 --dCacheSize 0 --mulDiv false --singleCycleMulDiv false --outputFile $(basename $@) --pipelining false --memoryStage false --writeBackStage false --withMmu true"
+VexRiscv_Fomu.v: src/main/scala/vexriscv/GenFomu.scala
+	sbt compile "runMain vexriscv.GenFomu --iCacheSize 2048 --dCacheSize 0 --mulDiv false --singleCycleMulDiv false --outputFile $(basename $@) --pipelining false --memoryStage false --writeBackStage false --withMmu true"
 
-VexRiscv_Fomu_Debug.v: src/main/scala/vexriscv/GenCoreDefault.scala
-	sbt compile " runMain vexriscv.GenCoreDefault --iCacheSize 2048 --dCacheSize 0 --mulDiv false --singleCycleMulDiv false --outputFile $(basename $@) --pipelining false --memoryStage false --writeBackStage false --withMmu true -d --hardwareBreakpointCount 2"
+VexRiscv_Fomu_Debug.v: src/main/scala/vexriscv/GenFomu.scala
+	sbt compile "runMain vexriscv.GenFomu --iCacheSize 2048 --dCacheSize 0 --mulDiv false --singleCycleMulDiv false --outputFile $(basename $@) --pipelining false --memoryStage false --writeBackStage false --withMmu true -d --hardwareBreakpointCount 2"
+
+VexRiscv_Fomu_Crypto.v: src/main/scala/vexriscv/GenFomuCrypto.scala
+	sbt compile "runMain vexriscv.GenFomuCrypto --iCacheSize 4096 --dCacheSize 0 --mulDiv true --singleCycleMulDiv true --outputFile $(basename $@) --pipelining false --memoryStage false --writeBackStage false --withMmu false"
+
+VexRiscv_Fomu_Crypto_Debug.v: src/main/scala/vexriscv/GenFomuCrypto.scala
+	sbt compile "runMain vexriscv.GenFomuCrypto --iCacheSize 4096 --dCacheSize 0 --mulDiv true --singleCycleMulDiv true --outputFile $(basename $@) --pipelining false --memoryStage false --writeBackStage false --withMmu false -d --hardwareBreakpointCount 2"
 
 VexRiscv_HaD.v: src/main/scala/vexriscv/GenHaD.scala
 	sbt compile "runMain vexriscv.GenHaD --outputFile $(basename $@)"

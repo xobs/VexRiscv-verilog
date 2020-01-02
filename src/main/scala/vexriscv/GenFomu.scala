@@ -8,13 +8,13 @@ import vexriscv.plugin._
 
 import scala.collection.mutable.ArrayBuffer
 
-object SpinalConfig extends spinal.core.SpinalConfig(
+object FomuSpinalConfig extends spinal.core.SpinalConfig(
   defaultConfigForClockDomains = ClockDomainConfig(
     resetKind = spinal.core.SYNC
   )
 )
 
-case class ArgConfig(
+case class FomuArgConfig(
   debug : Boolean = false,
   iCacheSize : Int = 4096,
   dCacheSize : Int = 4096,
@@ -34,7 +34,7 @@ case class ArgConfig(
   hardwareBreakpointCount : Int = 4
 )
 
-object GenCoreDefault{
+object GenFomu{
   val predictionMap = Map(
     "none" -> NONE,
     "static" -> STATIC,
@@ -45,8 +45,8 @@ object GenCoreDefault{
   def main(args: Array[String]) {
 
     // Allow arguments to be passed ex:
-    // sbt compile "run-main vexriscv.GenCoreDefault -d --iCacheSize=1024"
-    val parser = new scopt.OptionParser[ArgConfig]("VexRiscvGen") {
+    // sbt compile "run-main vexriscv.GenFomu -d --iCacheSize=1024"
+    val parser = new scopt.OptionParser[FomuArgConfig]("VexRiscvGen") {
       //  ex :-d    or   --debug
       opt[Unit]('d', "debug")    action { (_, c) => c.copy(debug = true)   } text("Enable debug")
       opt[Int]("hardwareBreakpointCount")     action { (v, c) => c.copy(hardwareBreakpointCount = v) } text("Specify number of hardware breakpoints")
@@ -69,9 +69,9 @@ object GenCoreDefault{
       opt[Boolean]("withMmu")                  action { (v, c) => c.copy(withMmu = v) } text("Enable MMU")
       opt[Boolean]("noComplianceOverhead")  action { (v, c) => c.copy(noComplianceOverhead = v) } text("output file name")
     }
-    val argConfig = parser.parse(args, ArgConfig()).get
+    val argConfig = parser.parse(args, FomuArgConfig()).get
 
-    SpinalConfig.copy(netlistFileName = argConfig.outputFile + ".v").generateVerilog {
+    FomuSpinalConfig.copy(netlistFileName = argConfig.outputFile + ".v").generateVerilog {
       // Generate CPU plugin list
       val plugins = ArrayBuffer[Plugin[VexRiscv]]()
 
